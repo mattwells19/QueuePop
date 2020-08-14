@@ -1,0 +1,10 @@
+{
+  "configurations": [
+    {
+      "command": "npm start",
+      "name": "Start QueuePop",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
+}

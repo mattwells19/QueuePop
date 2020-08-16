@@ -1,8 +1,8 @@
-import { IBallChaser, ICurrentQueue } from "./types";
+import { IBallChaser, ICurrentQueue } from "../Utils/types";
 import CurrentQueue from "../Schemas/CurrentQueue";
 import { AdminEmbed, ErrorEmbed } from "./EmbedHelper";
 import { MessageEmbed } from "discord.js";
-import { getQueue } from "./AsyncFunctions";
+import { getQueue } from "../Queue/QueueAsync";
 
 export async function FillQueue(guildId: string): Promise<MessageEmbed> {
   const queueToAdd: Array<IBallChaser> = [

@@ -1,8 +1,8 @@
 import { User, MessageEmbed, MessageMentions } from "discord.js";
-import { addPlayerToQueue, getQueue, removePlayerFromQueue } from "./AsyncFunctions";
-import { QueueUpdateEmbed, InfoEmbed, ErrorEmbed } from "./EmbedHelper";
-import { queueSizeAndList, teamList, removeAtIndex } from "./Utils";
-import { ICurrentQueue } from "./types";
+import { addPlayerToQueue, getQueue, removePlayerFromQueue } from "./QueueAsync";
+import { QueueUpdateEmbed, InfoEmbed, ErrorEmbed } from "../Helpers/EmbedHelper";
+import { queueSizeAndList, teamList, removeAtIndex } from "../Utils/utils";
+import { ICurrentQueue } from "../Utils/types";
 import CurrentQueue from "../Schemas/CurrentQueue";
 
 export async function PlayerQueued(guildId: string, player: User): Promise<MessageEmbed> {

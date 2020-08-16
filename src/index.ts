@@ -1,11 +1,18 @@
 import { Client, Message } from "discord.js";
 import dotenv from "dotenv";
-import { prefix } from "./constants";
+import { prefix } from "./Utils/constants";
 import { connect } from "mongoose";
-import { PlayerQueued, ListQueue, PlayerLeavingQueue, QueuePopRandom, QueuePopCaptains, CaptainsPick } from "./Queue";
-import { FillQueue, ClearQueue, FillCaptains, FlipCaptains } from "./TestHelpers";
-import { isAdmin } from "./Utils";
-import { ErrorEmbed } from "./EmbedHelper";
+import {
+  PlayerQueued,
+  ListQueue,
+  PlayerLeavingQueue,
+  QueuePopRandom,
+  QueuePopCaptains,
+  CaptainsPick,
+} from "./Queue/Queue";
+import { FillQueue, ClearQueue, FillCaptains, FlipCaptains } from "./Helpers/TestHelpers";
+import { isAdmin } from "./Utils/utils";
+import { ErrorEmbed } from "./Helpers/EmbedHelper";
 
 dotenv.config();
 const client = new Client({});

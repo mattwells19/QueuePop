@@ -1,8 +1,8 @@
 import CurrentQueue from "../Schemas/CurrentQueue";
-import { ICurrentQueue } from "./types";
+import { ICurrentQueue } from "../Utils/types";
 import { User } from "discord.js";
 import { Document } from "mongoose";
-import { playerInQueue } from "./Utils";
+import { playerInQueue } from "../Utils/utils";
 
 function ConvertDocumentToQueue(doc: Document): ICurrentQueue {
   const data = doc.toJSON();

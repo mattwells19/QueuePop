@@ -9,5 +9,6 @@ export interface ICurrentQueue {
 export interface IBallChaser {
   id: string;
   name: string;
+  mention: string;
   queueTime?: Date;
 }

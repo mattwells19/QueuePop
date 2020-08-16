@@ -1,28 +1,28 @@
-import { User, MessageEmbed, MessageMentions } from "discord.js";
+import { MessageEmbed, MessageMentions } from "discord.js";
 import { addPlayerToQueue, getQueue, removePlayerFromQueue } from "./QueueAsync";
 import { QueueUpdateEmbed, InfoEmbed, ErrorEmbed } from "../Helpers/EmbedHelper";
 import { queueSizeAndList, teamList, removeAtIndex } from "../Utils/utils";
-import { ICurrentQueue } from "../Utils/types";
+import { ICurrentQueue, IBallChaser } from "../Utils/types";
 import CurrentQueue from "../Schemas/CurrentQueue";
 
-export async function PlayerQueued(guildId: string, player: User): Promise<MessageEmbed> {
+export async function PlayerQueued(guildId: string, player: IBallChaser): Promise<MessageEmbed> {
   const currQueue: ICurrentQueue | string = await addPlayerToQueue(guildId, player);
-
+  console.log(typeof currQueue);
   if (typeof currQueue === "string") return ErrorEmbed("Could Not Add Player to Queue", currQueue);
 
   if (currQueue.queue.length === 1)
-    return QueueUpdateEmbed("Queue has Started", `${player} wants to queue!` + "\n\nType **!q** to queue.");
+    return QueueUpdateEmbed("Queue has Started", `${player.mention} wants to queue!` + "\n\nType **!q** to queue.");
 
   if (currQueue.queue.length === 6)
     return QueueUpdateEmbed(
       "Queue is Full!",
-      `${player} has been added to the queue.` +
+      `${player.mention} has been added to the queue.` +
         "\n\n**Queue is now full!**\n\nType `!random` for random teams.\nType `!captains` to pick teams."
     );
 
   return QueueUpdateEmbed(
     "Player Added to Queue",
-    `${player} has been added to the queue.` + "\n\n" + queueSizeAndList(currQueue.queue)
+    `${player.mention} has been added to the queue.` + "\n\n" + queueSizeAndList(currQueue.queue)
   );
 }
 
@@ -33,7 +33,7 @@ export async function ListQueue(guildId: string): Promise<MessageEmbed> {
   else return InfoEmbed("Current Queue", "Queue is empty.");
 }
 
-export async function PlayerLeavingQueue(guildId: string, player: User): Promise<MessageEmbed> {
+export async function PlayerLeavingQueue(guildId: string, player: IBallChaser): Promise<MessageEmbed> {
   const newQueue: ICurrentQueue | string | null = await removePlayerFromQueue(guildId, player);
 
   if (typeof newQueue === "string") return ErrorEmbed("Could Not Remove Player from Queue", newQueue);
@@ -100,7 +100,11 @@ export async function QueuePopCaptains(guildId: string): Promise<MessageEmbed> {
   return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
 }
 
-export async function CaptainsPick(guildId: string, author: User, mentions: MessageMentions): Promise<MessageEmbed> {
+export async function CaptainsPick(
+  guildId: string,
+  author: IBallChaser,
+  mentions: MessageMentions
+): Promise<MessageEmbed> {
   const guildQueue = await getQueue(guildId);
 
   if (!guildQueue) return ErrorEmbed("Queue Not Full", "You need 6 players and set captains before picking teams.");

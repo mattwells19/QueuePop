@@ -1,6 +1,5 @@
 import CurrentQueue from "../Schemas/CurrentQueue";
-import { ICurrentQueue } from "../Utils/types";
-import { User } from "discord.js";
+import { ICurrentQueue, IBallChaser } from "../Utils/types";
 import { Document } from "mongoose";
 import { playerInQueue } from "../Utils/utils";
 
@@ -41,7 +40,7 @@ export async function getQueue(guildId: string): Promise<ICurrentQueue | null> {
   else return null;
 }
 
-export async function addPlayerToQueue(guildId: string, player: User): Promise<ICurrentQueue | string> {
+export async function addPlayerToQueue(guildId: string, player: IBallChaser): Promise<ICurrentQueue | string> {
   const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
 
   if (guildQueue) {
@@ -55,10 +54,7 @@ export async function addPlayerToQueue(guildId: string, player: User): Promise<I
       guildQueue._id,
       {
         $addToSet: {
-          queue: {
-            id: player.id,
-            name: player.username,
-          },
+          queue: player,
         },
       },
       { new: true }
@@ -69,7 +65,7 @@ export async function addPlayerToQueue(guildId: string, player: User): Promise<I
 
   const createdQueue = await new CurrentQueue({
     guildId: guildId,
-    queue: [{ id: player.id, name: player.username }],
+    queue: [player],
     orangeCap: null,
     blueCap: null,
     blueTeam: [],
@@ -79,7 +75,10 @@ export async function addPlayerToQueue(guildId: string, player: User): Promise<I
   return ConvertDocumentToQueue(createdQueue);
 }
 
-export async function removePlayerFromQueue(guildId: string, player: User): Promise<ICurrentQueue | string | null> {
+export async function removePlayerFromQueue(
+  guildId: string,
+  player: IBallChaser
+): Promise<ICurrentQueue | string | null> {
   const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
 
   if (guildQueue) {
@@ -90,10 +89,7 @@ export async function removePlayerFromQueue(guildId: string, player: User): Prom
       guildQueue._id,
       {
         $pull: {
-          queue: {
-            id: player.id,
-            name: player.username,
-          },
+          queue: player,
         },
       },
       { new: true }

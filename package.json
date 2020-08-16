@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/mattwells19/QueuePop#readme",
   "devDependencies": {
+    "@types/jest": "^26.0.10",
     "@types/mongoose": "^5.7.36",
     "@types/node": "^14.0.27",
     "@types/node-fetch": "^2.5.7",
@@ -26,6 +27,8 @@
     "@typescript-eslint/parser": "^3.9.0",
     "dotenv": "^8.2.0",
     "eslint": "^7.7.0",
+    "jest": "^26.4.0",
+    "ts-jest": "^26.2.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
   },

@@ -9,26 +9,32 @@ export async function FillQueue(guildId: string): Promise<MessageEmbed> {
     {
       id: "346838372649795595",
       name: "Tux",
+      mention: "<@346838372649795595>",
     },
     {
       id: "227273256820801536",
       name: "twan",
+      mention: "<@227273256820801536>",
     },
     {
       id: "430517075870482433",
       name: "cre8",
+      mention: "<@430517075870482433>",
     },
     {
       id: "209084277223194624",
       name: "DaffyJr",
+      mention: "<@209084277223194624>",
     },
     {
       id: "94264612811186176",
       name: "IncognitoTurtle",
+      mention: "<@94264612811186176>",
     },
     {
       id: "146095425475182592",
       name: "furrywolfman33",
+      mention: "<@146095425475182592>",
     },
   ];
 
@@ -61,38 +67,46 @@ export async function FillCaptains(guildId: string): Promise<MessageEmbed> {
       {
         name: "Speed",
         id: "71812906886365184",
+        mention: "<@71812906886365184>",
       },
       {
         name: "DaffyJr",
         id: "209084277223194624",
+        mention: "<@209084277223194624>",
       },
       {
         name: "Don",
         id: "528369347807412227",
+        mention: "<@528369347807412227>",
       },
       {
         name: "Onion",
         id: "177896719734800384",
+        mention: "<@177896719734800384>",
       },
     ],
     orangeCap: {
       name: "Tux",
       id: "346838372649795595",
+      mention: "<@346838372649795595>",
     },
     blueCap: {
       name: "Quintic",
       id: "258025608200585227",
+      mention: "<@258025608200585227>",
     },
     orangeTeam: [
       {
         name: "Tux",
         id: "346838372649795595",
+        mention: "<@346838372649795595>",
       },
     ],
     blueTeam: [
       {
         name: "Quintic",
         id: "258025608200585227",
+        mention: "<@258025608200585227>",
       },
     ],
   };

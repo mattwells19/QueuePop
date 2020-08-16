@@ -27,3 +27,11 @@ export const removeAtIndex = (queue: Array<IBallChaser>, index: number): Array<I
   temp.splice(index, 1);
   return temp;
 };
+
+export const userToBallChaser = (player: User): IBallChaser => {
+  return {
+    id: player.id,
+    name: player.username,
+    mention: `<@${player.id}>`,
+  };
+};

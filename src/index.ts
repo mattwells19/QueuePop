@@ -11,8 +11,9 @@ import {
   CaptainsPick,
 } from "./Queue/Queue";
 import { FillQueue, ClearQueue, FillCaptains, FlipCaptains } from "./Helpers/TestHelpers";
-import { isAdmin } from "./Utils/utils";
+import { isAdmin, userToBallChaser } from "./Utils/utils";
 import { ErrorEmbed } from "./Helpers/EmbedHelper";
+import { IBallChaser } from "./Utils/types";
 
 dotenv.config();
 const client = new Client({});
@@ -41,20 +42,22 @@ client.on("message", async (msg: Message) => {
   // remove prefix from message
   // const args = msg.content.trim().split(" ").slice(1);
   const command = msg.content.slice(1).trim().split(" ")[0].toLowerCase();
+  const guildId: string = msg.guild.id;
+  const author: IBallChaser = userToBallChaser(msg.author);
 
-  if (command === "q") msg.channel.send(await PlayerQueued(msg.guild.id, msg.author));
-  else if (command === "list") msg.channel.send(await ListQueue(msg.guild.id));
-  else if (command === "leave") msg.channel.send(await PlayerLeavingQueue(msg.guild.id, msg.author));
-  else if (command === "random") msg.channel.send(await QueuePopRandom(msg.guild.id));
-  else if (command === "captains") msg.channel.send(await QueuePopCaptains(msg.guild.id));
-  else if (command === "pick") msg.channel.send(await CaptainsPick(msg.guild.id, msg.author, msg.mentions));
-  else if (command === "fill" && isAdmin(msg)) msg.channel.send(await FillQueue(msg.guild.id));
-  else if (command === "fillcap" && isAdmin(msg)) msg.channel.send(await FillCaptains(msg.guild.id));
-  else if (command === "flipcap" && isAdmin(msg)) msg.channel.send(await FlipCaptains(msg.guild.id));
-  else if (command === "clear" && isAdmin(msg)) msg.channel.send(await ClearQueue(msg.guild.id));
+  if (command === "q") msg.channel.send(await PlayerQueued(guildId, author));
+  else if (command === "list") msg.channel.send(await ListQueue(guildId));
+  else if (command === "leave") msg.channel.send(await PlayerLeavingQueue(guildId, author));
+  else if (command === "random") msg.channel.send(await QueuePopRandom(guildId));
+  else if (command === "captains") msg.channel.send(await QueuePopCaptains(guildId));
+  else if (command === "pick") msg.channel.send(await CaptainsPick(guildId, author, msg.mentions));
+  else if (command === "fill" && isAdmin(msg)) msg.channel.send(await FillQueue(guildId));
+  else if (command === "fillcap" && isAdmin(msg)) msg.channel.send(await FillCaptains(guildId));
+  else if (command === "flipcap" && isAdmin(msg)) msg.channel.send(await FlipCaptains(guildId));
+  else if (command === "clear" && isAdmin(msg)) msg.channel.send(await ClearQueue(guildId));
   else msg.channel.send(ErrorEmbed("Command Not Found", "That is not a valid command."));
 
-  msg.channel.stopTyping();
+  await msg.channel.stopTyping();
 });
 
 client.login(process.env.token);

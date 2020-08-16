@@ -1,4 +1,4 @@
-import { MessageEmbed, MessageMentions } from "discord.js";
+import { MessageEmbed } from "discord.js";
 import { addPlayerToQueue, getQueue, removePlayerFromQueue } from "./QueueAsync";
 import { QueueUpdateEmbed, InfoEmbed, ErrorEmbed } from "../Helpers/EmbedHelper";
 import { queueSizeAndList, teamList, removeAtIndex } from "../Utils/utils";
@@ -7,7 +7,7 @@ import CurrentQueue from "../Schemas/CurrentQueue";
 
 export async function PlayerQueued(guildId: string, player: IBallChaser): Promise<MessageEmbed> {
   const currQueue: ICurrentQueue | string = await addPlayerToQueue(guildId, player);
-  console.log(typeof currQueue);
+
   if (typeof currQueue === "string") return ErrorEmbed("Could Not Add Player to Queue", currQueue);
 
   if (currQueue.queue.length === 1)
@@ -45,71 +45,67 @@ export async function PlayerLeavingQueue(guildId: string, player: IBallChaser): 
 export async function QueuePopRandom(guildId: string): Promise<MessageEmbed> {
   const guildQueue = await getQueue(guildId);
 
-  if (guildQueue) {
-    if (guildQueue.queue.length < 6 && guildQueue.orangeCap === null)
-      return ErrorEmbed("Queue Not Full", "You need 6 players before random teams can be assigned.");
-    if (guildQueue.orangeCap !== null)
-      return ErrorEmbed("Captains Already Selected", "Captains are already set. Captains must pick players.");
+  if (!guildQueue) return ErrorEmbed("Queue Not Full", "You need 6 players before random teams can be assigned.");
 
-    const blueTeam = [];
-    const modifiedQueue = Array.from(guildQueue.queue);
+  if (guildQueue.queue.length < 6 && guildQueue.orangeCap === null)
+    return ErrorEmbed("Queue Not Full", "You need 6 players before random teams can be assigned.");
+  if (guildQueue.orangeCap !== null)
+    return ErrorEmbed("Captains Already Selected", "Captains are already set. Captains must pick players.");
 
-    for (let i = 0; i < 3; i++) {
-      const randomIndex = Math.floor(Math.random() * modifiedQueue.length);
-      blueTeam.push(modifiedQueue.splice(randomIndex, 1)[0]);
-    }
+  const blueTeam = [];
+  const modifiedQueue = Array.from(guildQueue.queue);
 
-    await CurrentQueue.findOneAndRemove({ guildId: guildId });
-
-    return QueueUpdateEmbed("Teams are Set!", "")
-      .addField("🔹 BLUE TEAM 🔹", teamList(blueTeam))
-      .addField("🔸 ORANGE TEAM 🔸", teamList(modifiedQueue));
+  for (let i = 0; i < 3; i++) {
+    const randomIndex = Math.floor(Math.random() * modifiedQueue.length);
+    blueTeam.push(modifiedQueue.splice(randomIndex, 1)[0]);
   }
-  return ErrorEmbed("Queue Not Full", "You need 6 players before random teams can be assigned.");
+
+  await CurrentQueue.findOneAndRemove({ guildId: guildId });
+
+  return QueueUpdateEmbed("Teams are Set!", "")
+    .addField("🔹 BLUE TEAM 🔹", teamList(blueTeam))
+    .addField("🔸 ORANGE TEAM 🔸", teamList(modifiedQueue));
 }
 
 export async function QueuePopCaptains(guildId: string): Promise<MessageEmbed> {
   const guildQueue = await getQueue(guildId);
 
-  if (guildQueue) {
-    if (guildQueue.queue.length < 6 && guildQueue.orangeCap === null)
-      return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
-    if (guildQueue.orangeCap !== null)
-      return ErrorEmbed("Captains Already Selected", "Captains are already set. Captains must pick players.");
+  if (!guildQueue) return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
 
-    const modifiedQueue = Array.from(guildQueue.queue);
+  if (guildQueue.queue.length < 6 && guildQueue.orangeCap === null)
+    return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
+  if (guildQueue.orangeCap !== null)
+    return ErrorEmbed("Captains Already Selected", "Captains are already set. Captains must pick players.");
 
-    const blueCap = modifiedQueue.splice(Math.floor(Math.random() * modifiedQueue.length), 1)[0];
-    const orangeCap = modifiedQueue.splice(Math.floor(Math.random() * modifiedQueue.length), 1)[0];
+  const modifiedQueue = Array.from(guildQueue.queue);
 
-    await CurrentQueue.findOneAndUpdate(
-      { guildId: guildId },
-      {
-        queue: modifiedQueue,
-        blueCap: { id: blueCap.id, name: blueCap.name },
-        orangeCap: { id: orangeCap.id, name: orangeCap.name },
-        blueTeam: [blueCap],
-        orangeTeam: [orangeCap],
-      }
-    );
+  const blueCap = modifiedQueue.splice(Math.floor(Math.random() * modifiedQueue.length), 1)[0];
+  const orangeCap = modifiedQueue.splice(Math.floor(Math.random() * modifiedQueue.length), 1)[0];
 
-    return QueueUpdateEmbed("Captains Set", "")
-      .addField("🔹 BLUE TEAM CAPTAIN 🔹", teamList([blueCap]))
-      .addField("🔸 ORANGE TEAM CAPTAIN 🔸", teamList([orangeCap]));
-  }
-  return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
+  await CurrentQueue.findOneAndUpdate(
+    { guildId: guildId },
+    {
+      queue: modifiedQueue,
+      blueCap: { id: blueCap.id, name: blueCap.name },
+      orangeCap: { id: orangeCap.id, name: orangeCap.name },
+      blueTeam: [blueCap],
+      orangeTeam: [orangeCap],
+    }
+  );
+
+  return QueueUpdateEmbed("Captains Set", "")
+    .addField("🔹 BLUE TEAM CAPTAIN 🔹", teamList([blueCap]))
+    .addField("🔸 ORANGE TEAM CAPTAIN 🔸", teamList([orangeCap]));
 }
 
 export async function CaptainsPick(
   guildId: string,
   author: IBallChaser,
-  mentions: MessageMentions
+  mentions: Array<IBallChaser>
 ): Promise<MessageEmbed> {
   const guildQueue = await getQueue(guildId);
 
   if (!guildQueue) return ErrorEmbed("Queue Not Full", "You need 6 players and set captains before picking teams.");
-
-  const mentionedPlayerIds = mentions.users.map((p) => p.id);
 
   // Check if captains have been assigned
   if (guildQueue.orangeCap === null && guildQueue.queue.length === 6)
@@ -118,24 +114,24 @@ export async function CaptainsPick(
   else if (guildQueue.blueTeam.length === 1 && author.id !== guildQueue.blueCap.id)
     return ErrorEmbed(
       "Not Blue Team Captain",
-      `It is blue team's turn to pick. The blue team captain is <@${guildQueue.blueCap.id}> which isn't you.`
+      `It is blue team's turn to pick. The blue team captain is ${guildQueue.blueCap.mention} which isn't you.`
     );
   // Check if it is orange team's turn to pick and the person picking is the orange team captain
   else if (guildQueue.blueTeam.length === 2 && author.id !== guildQueue.orangeCap.id)
     return ErrorEmbed(
       "Not Orange Team Captain",
-      `It is orange team's turn to pick. The orange team captain is <@${guildQueue.orangeCap.id}> which isn't you.`
+      `It is orange team's turn to pick. The orange team captain is ${guildQueue.orangeCap.mention} which isn't you.`
     );
   // Check if it is blue team's turn to pick and there was only one person mentioned
-  else if (guildQueue.blueTeam.length === 1 && mentions.users.size !== 1)
+  else if (guildQueue.blueTeam.length === 1 && mentions.length !== 1)
     return ErrorEmbed("Too Many Mentions", "Blue team only picks one player. Please only mention one player.");
   // Check if it is orange team's turn to pick and there two people mentioned
-  else if (guildQueue.blueTeam.length === 2 && mentions.users.size !== 2)
+  else if (guildQueue.blueTeam.length === 2 && mentions.length !== 2)
     return ErrorEmbed("Not Enough Mentions", "Orange team picks two players. Please mention two players.");
 
   // If blue team's turn to pick
   if (guildQueue.blueTeam.length === 1) {
-    const pickedPlayerIndex = guildQueue.queue.findIndex((x) => x.id === mentionedPlayerIds[0]);
+    const pickedPlayerIndex = guildQueue.queue.findIndex((x) => x.id === mentions[0].id);
     if (pickedPlayerIndex === -1)
       return ErrorEmbed("Player Not Found", "The player you mentioned is not in the queue. Please try again.");
 
@@ -149,14 +145,14 @@ export async function CaptainsPick(
     await CurrentQueue.findOneAndUpdate({ guildId: guildId }, { ...newQueue });
     return QueueUpdateEmbed(
       "Player Added to Blue Team",
-      `<@${mentionedPlayerIds[0]}> has been added to Blue team.\n\n<@${guildQueue.orangeCap.id}> please pick TWO people.`
+      `${mentions[0].mention}> has been added to Blue team.\n\n${guildQueue.orangeCap.mention} please pick TWO people.`
     );
   }
 
   // If orange team's turn to pick
   else {
-    const pickedPlayerIndex = guildQueue.queue.findIndex((x) => x.id === mentionedPlayerIds[0]);
-    const secondPickedPlayerIndex = guildQueue.queue.findIndex((x) => x.id === mentionedPlayerIds[1]);
+    const pickedPlayerIndex = guildQueue.queue.findIndex((x) => x.id === mentions[0].id);
+    const secondPickedPlayerIndex = guildQueue.queue.findIndex((x) => x.id === mentions[1].id);
     if (pickedPlayerIndex === -1 || secondPickedPlayerIndex === -1)
       return ErrorEmbed(
         "Player Not Found",

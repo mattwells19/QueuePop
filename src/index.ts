@@ -1,4 +1,4 @@
-import { Client, Message } from "discord.js";
+import { Client, Message, User } from "discord.js";
 import dotenv from "dotenv";
 import { prefix } from "./Utils/constants";
 import { connect } from "mongoose";
@@ -40,17 +40,20 @@ client.on("message", async (msg: Message) => {
   msg.channel.startTyping();
 
   // remove prefix from message
-  // const args = msg.content.trim().split(" ").slice(1);
   const command = msg.content.slice(1).trim().split(" ")[0].toLowerCase();
   const guildId: string = msg.guild.id;
   const author: IBallChaser = userToBallChaser(msg.author);
+
+  const mentions: Array<IBallChaser> = msg.mentions.users.map(
+    (p: User): IBallChaser => ({ id: p.id, name: p.username, mention: `<@${p.id}>` })
+  );
 
   if (command === "q") msg.channel.send(await PlayerQueued(guildId, author));
   else if (command === "list") msg.channel.send(await ListQueue(guildId));
   else if (command === "leave") msg.channel.send(await PlayerLeavingQueue(guildId, author));
   else if (command === "random") msg.channel.send(await QueuePopRandom(guildId));
   else if (command === "captains") msg.channel.send(await QueuePopCaptains(guildId));
-  else if (command === "pick") msg.channel.send(await CaptainsPick(guildId, author, msg.mentions));
+  else if (command === "pick") msg.channel.send(await CaptainsPick(guildId, author, mentions));
   else if (command === "fill" && isAdmin(msg)) msg.channel.send(await FillQueue(guildId));
   else if (command === "fillcap" && isAdmin(msg)) msg.channel.send(await FillCaptains(guildId));
   else if (command === "flipcap" && isAdmin(msg)) msg.channel.send(await FlipCaptains(guildId));

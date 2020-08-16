@@ -6,7 +6,7 @@ export const playerList = (players: Array<IBallChaser>): string => {
 };
 
 export const teamList = (players: Array<IBallChaser>): string => {
-  return players.map((p) => `<@${p.id}>`).join("\n");
+  return players.map((p) => `${p.mention}`).join("\n");
 };
 
 export const queueSizeAndList = (queue: Array<IBallChaser>): string => {

@@ -4,8 +4,14 @@ const CurrentQueueSchema = new Schema(
   {
     guildId: String,
     queue: Array,
-    orangeCap: String,
-    blueCap: String,
+    orangeCap: {
+      type: Object,
+      required: false,
+    },
+    blueCap: {
+      type: Object,
+      required: false,
+    },
     blueTeam: Array,
     orangeTeam: Array,
   },

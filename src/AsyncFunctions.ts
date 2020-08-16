@@ -2,6 +2,7 @@ import CurrentQueue from "../Schemas/CurrentQueue";
 import { ICurrentQueue } from "./types";
 import { User } from "discord.js";
 import { Document } from "mongoose";
+import { playerInQueue } from "./Utils";
 
 function ConvertDocumentToQueue(doc: Document): ICurrentQueue {
   const data = doc.toJSON();
@@ -14,6 +15,25 @@ function ConvertDocumentToQueue(doc: Document): ICurrentQueue {
   };
 }
 
+// Not quite implemented yet
+export async function cleanseStaleQueues(): Promise<void> {
+  const allGuildQueues = await CurrentQueue.find();
+  allGuildQueues.forEach((guildQueue) => {
+    const dataJson = ConvertDocumentToQueue(guildQueue);
+    if (dataJson.orangeCap !== null) return;
+
+    const newQueue = dataJson.queue.map((player) => {
+      if (player.queueTime) {
+        const diffTimeMillis = Math.abs(player.queueTime.getTime() - new Date().getTime());
+        const diffTimeMins = diffTimeMillis / 60000;
+        if (diffTimeMins >= 5) return null;
+      }
+      return player;
+    });
+    console.log(newQueue);
+  });
+}
+
 export async function getQueue(guildId: string): Promise<ICurrentQueue | null> {
   const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
 
@@ -21,29 +41,37 @@ export async function getQueue(guildId: string): Promise<ICurrentQueue | null> {
   else return null;
 }
 
-export async function addPlayerToQueue(guildId: string, player: User): Promise<ICurrentQueue> {
-  const newQueue = await CurrentQueue.findOneAndUpdate(
-    {
-      guildId: guildId,
-    },
-    {
-      $addToSet: {
-        queue: {
-          id: player.id,
-          name: player.username,
+export async function addPlayerToQueue(guildId: string, player: User): Promise<ICurrentQueue | string> {
+  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
+
+  if (guildQueue) {
+    const queueJson = ConvertDocumentToQueue(guildQueue);
+
+    if (playerInQueue(queueJson.queue, player)) return "Player already in queue.";
+    else if (queueJson.queue.length === 6) return "Queue is full. Wait for teams to be set and try again.";
+    else if (queueJson.orangeCap !== null) return "Queue has already popped. Wait for teams to be set and try again.";
+
+    const newQueue = await CurrentQueue.findByIdAndUpdate(
+      guildQueue._id,
+      {
+        $addToSet: {
+          queue: {
+            id: player.id,
+            name: player.username,
+          },
         },
       },
-    },
-    { new: true, useFindAndModify: false }
-  );
+      { new: true }
+    );
 
-  if (newQueue) return ConvertDocumentToQueue(newQueue);
+    if (newQueue) return ConvertDocumentToQueue(newQueue);
+  }
 
   const createdQueue = await new CurrentQueue({
     guildId: guildId,
     queue: [{ id: player.id, name: player.username }],
-    orangeCap: "",
-    blueCap: "",
+    orangeCap: null,
+    blueCap: null,
     blueTeam: [],
     orangeTeam: [],
   }).save();
@@ -51,28 +79,34 @@ export async function addPlayerToQueue(guildId: string, player: User): Promise<I
   return ConvertDocumentToQueue(createdQueue);
 }
 
-export async function removePlayerFromQueue(guildId: string, player: User): Promise<ICurrentQueue | null> {
-  const newQueue = await CurrentQueue.findOneAndUpdate(
-    {
-      guildId: guildId,
-    },
-    {
-      $pull: {
-        queue: {
-          id: player.id,
-          name: player.username,
+export async function removePlayerFromQueue(guildId: string, player: User): Promise<ICurrentQueue | string | null> {
+  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
+
+  if (guildQueue) {
+    const dataJson = ConvertDocumentToQueue(guildQueue);
+    if (!playerInQueue(dataJson.queue, player)) return "Player not in queue.";
+
+    const newQueue = await CurrentQueue.findByIdAndUpdate(
+      guildQueue._id,
+      {
+        $pull: {
+          queue: {
+            id: player.id,
+            name: player.username,
+          },
         },
       },
-    },
-    { new: true, useFindAndModify: false }
-  );
+      { new: true }
+    );
+    if (newQueue) {
+      const q = ConvertDocumentToQueue(newQueue);
 
-  if (newQueue) {
-    const q = ConvertDocumentToQueue(newQueue);
+      if (q.queue.length === 0) {
+        await CurrentQueue.findOneAndRemove({ guildId: guildId });
+        return null;
+      } else return q;
+    }
+  }
 
-    if (q.queue.length === 0) {
-      await CurrentQueue.findOneAndDelete({ guildId: guildId });
-      return null;
-    } else return q;
-  } else return null;
+  return "Player not in queue.";
 }

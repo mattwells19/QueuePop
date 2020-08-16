@@ -1,7 +1,7 @@
 export interface ICurrentQueue {
   queue: Array<IBallChaser>;
-  orangeCap: string;
-  blueCap: string;
+  orangeCap: IBallChaser;
+  blueCap: IBallChaser;
   blueTeam: Array<IBallChaser>;
   orangeTeam: Array<IBallChaser>;
 }
@@ -9,4 +9,5 @@ export interface ICurrentQueue {
 export interface IBallChaser {
   id: string;
   name: string;
+  queueTime?: Date;
 }

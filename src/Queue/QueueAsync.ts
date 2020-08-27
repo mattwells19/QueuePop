@@ -106,3 +106,11 @@ export async function removePlayerFromQueue(
 
   return "Player not in queue.";
 }
+
+export const removeQueue = async (guildId: string): Promise<void> => {
+  await CurrentQueue.findOneAndRemove({ guildId: guildId });
+};
+
+export const updateQueue = async (guildId: string, updatedData: Partial<ICurrentQueue>): Promise<void> => {
+  await CurrentQueue.findOneAndUpdate({ guildId: guildId }, updatedData);
+};

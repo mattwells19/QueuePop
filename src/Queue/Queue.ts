@@ -1,9 +1,8 @@
 import { MessageEmbed } from "discord.js";
-import { addPlayerToQueue, getQueue, removePlayerFromQueue } from "./QueueAsync";
+import { addPlayerToQueue, getQueue, removePlayerFromQueue, removeQueue, updateQueue } from "./QueueAsync";
 import { QueueUpdateEmbed, InfoEmbed, ErrorEmbed } from "../Helpers/EmbedHelper";
 import { queueSizeAndList, teamList, removeAtIndex } from "../Utils/utils";
 import { ICurrentQueue, IBallChaser } from "../Utils/types";
-import CurrentQueue from "../Schemas/CurrentQueue";
 
 export async function PlayerQueued(guildId: string, player: IBallChaser): Promise<MessageEmbed> {
   const currQueue: ICurrentQueue | string = await addPlayerToQueue(guildId, player);
@@ -47,9 +46,9 @@ export async function QueuePopRandom(guildId: string): Promise<MessageEmbed> {
 
   if (!guildQueue) return ErrorEmbed("Queue Not Full", "You need 6 players before random teams can be assigned.");
 
-  if (guildQueue.queue.length < 6 && guildQueue.orangeCap === null)
+  if (guildQueue.queue.length < 6 && !guildQueue.orangeCap)
     return ErrorEmbed("Queue Not Full", "You need 6 players before random teams can be assigned.");
-  if (guildQueue.orangeCap !== null)
+  if (guildQueue.orangeCap)
     return ErrorEmbed("Captains Already Selected", "Captains are already set. Captains must pick players.");
 
   const blueTeam = [];
@@ -60,7 +59,7 @@ export async function QueuePopRandom(guildId: string): Promise<MessageEmbed> {
     blueTeam.push(modifiedQueue.splice(randomIndex, 1)[0]);
   }
 
-  await CurrentQueue.findOneAndRemove({ guildId: guildId });
+  await removeQueue(guildId);
 
   return QueueUpdateEmbed("Teams are Set!", "")
     .addField("🔹 BLUE TEAM 🔹", teamList(blueTeam))
@@ -82,16 +81,14 @@ export async function QueuePopCaptains(guildId: string): Promise<MessageEmbed> {
   const blueCap = modifiedQueue.splice(Math.floor(Math.random() * modifiedQueue.length), 1)[0];
   const orangeCap = modifiedQueue.splice(Math.floor(Math.random() * modifiedQueue.length), 1)[0];
 
-  await CurrentQueue.findOneAndUpdate(
-    { guildId: guildId },
-    {
-      queue: modifiedQueue,
-      blueCap: { id: blueCap.id, name: blueCap.name },
-      orangeCap: { id: orangeCap.id, name: orangeCap.name },
-      blueTeam: [blueCap],
-      orangeTeam: [orangeCap],
-    }
-  );
+  const newQueue: ICurrentQueue = {
+    queue: modifiedQueue,
+    blueCap: { id: blueCap.id, name: blueCap.name, mention: `<@${blueCap.id}>` },
+    orangeCap: { id: orangeCap.id, name: orangeCap.name, mention: `<@${orangeCap.id}>` },
+    blueTeam: [blueCap],
+    orangeTeam: [orangeCap],
+  };
+  await updateQueue(guildId, newQueue);
 
   return QueueUpdateEmbed("Captains Set", "")
     .addField("🔹 BLUE TEAM CAPTAIN 🔹", teamList([blueCap]))
@@ -142,7 +139,7 @@ export async function CaptainsPick(
       queue: removeAtIndex(guildQueue.queue, pickedPlayerIndex),
       blueTeam,
     };
-    await CurrentQueue.findOneAndUpdate({ guildId: guildId }, { ...newQueue });
+    await updateQueue(guildId, { ...newQueue });
     return QueueUpdateEmbed(
       "Player Added to Blue Team",
       `${mentions[0].mention}> has been added to Blue team.\n\n${guildQueue.orangeCap.mention} please pick TWO people.`
@@ -170,7 +167,7 @@ export async function CaptainsPick(
     const blueTeam = Array.from(guildQueue.blueTeam);
     blueTeam.push(modifiedQueue[0]);
 
-    await CurrentQueue.findOneAndRemove({ guildId: guildId });
+    await removeQueue(guildId);
 
     return QueueUpdateEmbed("Teams are Set!", "")
       .addField("🔹 BLUE TEAM 🔹", teamList(blueTeam))

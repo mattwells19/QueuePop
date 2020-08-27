@@ -11,4 +11,8 @@ export const getFakeBallChaser = (): IBallChaser => {
   };
 };
 
-export const getFakeBallChasers = (count = 1): Array<IBallChaser> => Array(count).fill(getFakeBallChaser());
+export const getFakeBallChasers = (count = 1): Array<IBallChaser> => {
+  const fakes: Array<IBallChaser> = [];
+  for (let i = 0; i < count; i++) fakes.push(getFakeBallChaser());
+  return fakes;
+};

@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { ICurrentQueue } from "../Utils/types";
 
 const CurrentQueueSchema = new Schema(
   {
@@ -18,4 +19,8 @@ const CurrentQueueSchema = new Schema(
   { collection: "CurrentQueue" }
 );
 
-export default model("CurrentQueue", CurrentQueueSchema);
+interface IQueueSchema extends ICurrentQueue {
+  guildId: string;
+}
+
+export default IQueueSchema;

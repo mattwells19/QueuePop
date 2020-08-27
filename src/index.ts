@@ -1,7 +1,7 @@
 import { Client, Message, User } from "discord.js";
 import dotenv from "dotenv";
 import { prefix } from "./Utils/constants";
-import { connect } from "mongoose";
+import admin from "firebase-admin";
 import {
   PlayerQueued,
   ListQueue,
@@ -14,6 +14,9 @@ import { FillQueue, ClearQueue, FillCaptains, FlipCaptains } from "./Helpers/Tes
 import { isAdmin, userToBallChaser } from "./Utils/utils";
 import { ErrorEmbed } from "./Helpers/EmbedHelper";
 import { IBallChaser } from "./Utils/types";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const serviceAccount = require("../firebase.json");
 
 dotenv.config();
 const client = new Client({});
@@ -64,8 +67,8 @@ client.on("message", async (msg: Message) => {
 });
 
 client.login(process.env.token);
-connect(
-  process.env.mongodb ?? "",
-  { useUnifiedTopology: true, useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false },
-  () => console.log("Connected to MongoDB!")
-);
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+const CurrentQueue = admin.firestore().collection("CurrentQueue");
+export default CurrentQueue;

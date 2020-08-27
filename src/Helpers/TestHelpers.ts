@@ -1,8 +1,8 @@
 import { IBallChaser, ICurrentQueue } from "../Utils/types";
-import CurrentQueue from "../Schemas/CurrentQueue";
 import { AdminEmbed, ErrorEmbed } from "./EmbedHelper";
 import { MessageEmbed } from "discord.js";
 import { getQueue } from "../Queue/QueueAsync";
+import CurrentQueue from "..";
 
 export async function FillQueue(guildId: string): Promise<MessageEmbed> {
   const queueToAdd: Array<IBallChaser> = [
@@ -38,26 +38,27 @@ export async function FillQueue(guildId: string): Promise<MessageEmbed> {
     },
   ];
 
-  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
+  const guildQueue = await CurrentQueue.doc(guildId);
+  const guildQueueData = await guildQueue.get();
 
-  if (guildQueue) {
-    await CurrentQueue.findByIdAndUpdate(guildQueue._id, { queue: queueToAdd });
+  if (guildQueueData.exists) {
+    await guildQueue.set({ ...guildQueueData, queue: queueToAdd });
   } else {
-    await new CurrentQueue({
+    await guildQueue.set({
       guildId: guildId,
       queue: queueToAdd,
       orangeCap: null,
       blueCap: null,
       blueTeam: [],
       orangeTeam: [],
-    }).save();
+    });
   }
 
   return AdminEmbed("Queue Filled", "Queue successfully filled.");
 }
 
 export async function ClearQueue(guildId: string): Promise<MessageEmbed> {
-  await CurrentQueue.findOneAndRemove({ guildId: guildId });
+  await CurrentQueue.doc(guildId).delete();
   return AdminEmbed("Queue Cleared", "Queue has been cleared.");
 }
 
@@ -111,12 +112,13 @@ export async function FillCaptains(guildId: string): Promise<MessageEmbed> {
     ],
   };
 
-  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
+  const guildQueue = await CurrentQueue.doc(guildId);
+  const guildQueueData = await guildQueue.get();
 
-  if (guildQueue) {
-    await CurrentQueue.findByIdAndUpdate(guildQueue._id, { ...queueToAdd });
+  if (guildQueueData.exists) {
+    await guildQueue.set({ ...guildQueueData, queue: queueToAdd });
   } else {
-    await new CurrentQueue({ guildId: guildId, ...queueToAdd }).save();
+    await guildQueue.set(queueToAdd);
   }
 
   return AdminEmbed("Captain Queue Filled", "Queue successfully filled with captains.");
@@ -126,21 +128,20 @@ export async function FlipCaptains(guildId: string): Promise<MessageEmbed> {
   const guildQueue = await getQueue(guildId);
 
   if (!guildQueue) return ErrorEmbed("No Queue", "No queue available to flip captains.");
+  if (guildQueue.blueCap === null || guildQueue.orangeCap === null)
+    return ErrorEmbed("No Queue", "No queue available to flip captains.");
 
-  const blueTeam = Array.from(guildQueue.blueTeam).filter((x) => x.id !== guildQueue.blueCap.id);
+  const blueTeam = Array.from(guildQueue.blueTeam).filter((x) => x.id !== guildQueue.blueCap?.id);
   blueTeam.push(guildQueue.orangeCap);
-  const orangeTeam = Array.from(guildQueue.orangeTeam).filter((x) => x.id !== guildQueue.orangeCap.id);
+  const orangeTeam = Array.from(guildQueue.orangeTeam).filter((x) => x.id !== guildQueue.orangeCap?.id);
   orangeTeam.push(guildQueue.blueCap);
 
-  await CurrentQueue.findOneAndUpdate(
-    { guildId: guildId },
-    {
-      blueCap: guildQueue.orangeCap,
-      orangeCap: guildQueue.blueCap,
-      blueTeam,
-      orangeTeam,
-    }
-  );
+  await CurrentQueue.doc(guildId).set({
+    blueCap: guildQueue.orangeCap,
+    orangeCap: guildQueue.blueCap,
+    blueTeam,
+    orangeTeam,
+  });
 
   return AdminEmbed("Captains Flipped", "Captains have been flipped.");
 }

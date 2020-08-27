@@ -1,24 +1,13 @@
-import CurrentQueue from "../Schemas/CurrentQueue";
+import CurrentQueue from "..";
 import { ICurrentQueue, IBallChaser } from "../Utils/types";
-import { Document } from "mongoose";
-import { playerInQueue } from "../Utils/utils";
-
-function ConvertDocumentToQueue(doc: Document): ICurrentQueue {
-  const data = doc.toJSON();
-  return {
-    queue: data.queue,
-    blueCap: data.blueCap,
-    orangeCap: data.orangeCap,
-    blueTeam: data.blueTeam,
-    orangeTeam: data.orangeTeam,
-  };
-}
+import { playerInQueue, removeAtIndex } from "../Utils/utils";
+import IQueueSchema from "../Schemas/CurrentQueue";
 
 // Not quite implemented yet
 export async function cleanseStaleQueues(): Promise<void> {
-  const allGuildQueues = await CurrentQueue.find();
+  const allGuildQueues = await CurrentQueue.get();
   allGuildQueues.forEach((guildQueue) => {
-    const dataJson = ConvertDocumentToQueue(guildQueue);
+    const dataJson = guildQueue.data() as ICurrentQueue;
     if (dataJson.orangeCap !== null) return;
 
     const newQueue = dataJson.queue.map((player) => {
@@ -29,78 +18,64 @@ export async function cleanseStaleQueues(): Promise<void> {
       }
       return player;
     });
-    console.log(newQueue);
   });
 }
 
 export async function getQueue(guildId: string): Promise<ICurrentQueue | null> {
-  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
-
-  if (guildQueue) return ConvertDocumentToQueue(guildQueue);
+  const guildQueue = await CurrentQueue.doc(guildId).get();
+  if (guildQueue.exists) return guildQueue.data() as ICurrentQueue;
   else return null;
 }
 
 export async function addPlayerToQueue(guildId: string, player: IBallChaser): Promise<ICurrentQueue | string> {
-  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
+  const guildQueue = CurrentQueue.doc(guildId);
+  const guildQueueData = await guildQueue.get();
 
-  if (guildQueue) {
-    const queueJson = ConvertDocumentToQueue(guildQueue);
+  if (guildQueueData.exists) {
+    const queueJson = guildQueueData.data() as ICurrentQueue;
 
     if (playerInQueue(queueJson.queue, player)) return "Player already in queue.";
     else if (queueJson.queue.length === 6) return "Queue is full. Wait for teams to be set and try again.";
     else if (queueJson.orangeCap !== null) return "Queue has already popped. Wait for teams to be set and try again.";
 
-    const newQueue = await CurrentQueue.findByIdAndUpdate(
-      guildQueue._id,
-      {
-        $addToSet: {
-          queue: player,
-        },
-      },
-      { new: true }
-    );
-
-    if (newQueue) return ConvertDocumentToQueue(newQueue);
+    queueJson.queue.push(player);
+    guildQueue.set(queueJson);
   }
 
-  const createdQueue = await new CurrentQueue({
+  const newQueue: IQueueSchema = {
     guildId: guildId,
     queue: [player],
     orangeCap: null,
     blueCap: null,
     blueTeam: [],
     orangeTeam: [],
-  }).save();
+  };
 
-  return ConvertDocumentToQueue(createdQueue);
+  await guildQueue.set(newQueue);
+  return newQueue;
 }
 
 export async function removePlayerFromQueue(
   guildId: string,
   player: IBallChaser
 ): Promise<ICurrentQueue | string | null> {
-  const guildQueue = await CurrentQueue.findOne({ guildId: guildId });
+  const guildQueue = CurrentQueue.doc(guildId);
+  const guildQueueData = await guildQueue.get();
 
-  if (guildQueue) {
-    const dataJson = ConvertDocumentToQueue(guildQueue);
+  if (guildQueueData.exists) {
+    const dataJson = guildQueueData.data() as ICurrentQueue;
     if (!playerInQueue(dataJson.queue, player)) return "Player not in queue.";
 
-    const newQueue = await CurrentQueue.findByIdAndUpdate(
-      guildQueue._id,
-      {
-        $pull: {
-          queue: player,
-        },
-      },
-      { new: true }
+    const newQueue = removeAtIndex(
+      dataJson.queue,
+      dataJson.queue.findIndex((x) => x.id === player.id)
     );
-    if (newQueue) {
-      const q = ConvertDocumentToQueue(newQueue);
-
-      if (q.queue.length === 0) {
-        await CurrentQueue.findOneAndRemove({ guildId: guildId });
-        return null;
-      } else return q;
+    if (newQueue.length === 0) {
+      await guildQueue.delete();
+      return null;
+    } else {
+      guildQueue.set({ ...dataJson, queue: newQueue });
+      return { ...dataJson, queue: newQueue };
     }
   }
 

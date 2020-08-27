@@ -1,7 +1,7 @@
 export interface ICurrentQueue {
   queue: Array<IBallChaser>;
-  orangeCap: IBallChaser;
-  blueCap: IBallChaser;
+  orangeCap: IBallChaser | null;
+  blueCap: IBallChaser | null;
   blueTeam: Array<IBallChaser>;
   orangeTeam: Array<IBallChaser>;
 }

@@ -35,9 +35,7 @@
     "typescript": "^3.9.7"
   },
   "dependencies": {
-    "axios": "^0.19.2",
     "discord.js": "^12.3.1",
-    "firebase-admin": "^9.1.1",
     "mongoose": "^5.10.1"
   }
 }

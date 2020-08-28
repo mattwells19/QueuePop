@@ -71,9 +71,9 @@ export async function QueuePopCaptains(guildId: string): Promise<MessageEmbed> {
 
   if (!guildQueue) return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
 
-  if (guildQueue.queue.length < 6 && guildQueue.orangeCap === null)
+  if (guildQueue.queue.length < 6 && !guildQueue.orangeCap)
     return ErrorEmbed("Queue Not Full", "You need 6 players before captains can be assigned.");
-  if (guildQueue.orangeCap !== null)
+  if (guildQueue.orangeCap)
     return ErrorEmbed("Captains Already Selected", "Captains are already set. Captains must pick players.");
 
   const modifiedQueue = Array.from(guildQueue.queue);

@@ -6,7 +6,9 @@
   "scripts": {
     "lint": "npx eslint --ext .ts",
     "start": "nodemon src/index.ts",
-    "test": "npx jest"
+    "test": "npx jest",
+    "build": "tsc",
+    "prod": "node ./build/index.js"
   },
   "repository": {
     "type": "git",
